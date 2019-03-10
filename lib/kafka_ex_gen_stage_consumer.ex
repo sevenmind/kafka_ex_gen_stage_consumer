@@ -345,22 +345,27 @@ defmodule KafkaExGenStageConsumer do
   @doc """
   Returns the topic and partition id for this consumer process
   """
-  @spec partition(GenServer.server()) ::
+  @spec partition(GenStage.stage()) ::
           {topic :: binary, partition_id :: non_neg_integer}
   def partition(gen_consumer) do
-    GenServer.call(gen_consumer, :partition)
+    GenStage.call(gen_consumer, :partition)
   end
 
   def trigger_commit(gen_consumer, {strategy, offset}) do
-    GenServer.call(gen_consumer, {:commit, strategy, offset})
+    GenStage.cast(gen_consumer, {:commit, strategy, offset})
   end
 
   def handle_call(:partition, _from, state) do
     {:reply, {state.topic, state.partition}, [], state}
   end
 
-  def handle_call({:commit, strategy, offset}, _from, state) do
-    {:reply, :ok, [], handle_commit(strategy, %State{state | acked_offset: offset})}
+  def handle_cast({:commit, strategy, offset}, %State{acked_offset: acked_offset} = state)
+      when offset > acked_offset do
+    {:noreply, [], handle_commit(strategy, %State{state | acked_offset: offset})}
+  end
+
+  def handle_cast({:commit, _, _}, state) do
+    {:noreply, [], state}
   end
 
   # handle_info maintains the loop attemting to meet demand until demand == 0
