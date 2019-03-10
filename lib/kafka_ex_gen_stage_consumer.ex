@@ -252,7 +252,7 @@ defmodule KafkaExGenStageConsumer do
     # be started with the PID of self
     {:ok, _pid} = subscribing_module.start_link({self, topic, partition, extra_consumer_args})
 
-    Process.flag(:trap_exit, true)
+    # Process.flag(:trap_exit, true)
 
     {:producer, state, producer_options}
   end
@@ -292,7 +292,7 @@ defmodule KafkaExGenStageConsumer do
            fetch_options: fetch_options
          } = state
        ) do
-    Logger.debug("Handling demand #{demand} on #{topic}/#{partition}")
+    # Logger.debug("Handling demand #{demand} on #{topic}/#{partition}")
 
     [
       %FetchResponse{
@@ -376,16 +376,19 @@ defmodule KafkaExGenStageConsumer do
     do_handle_demand(demand, state)
   end
 
-  def handle_info(message, state) do
-    Logger.debug("Unexpected handl_info #{inspect(message)}")
+  def handle_info(:try_to_meet_demand, state) do
+    # Only way to reset Flow subscribers demand is to kill self?
+    # {:stop, {:shutdown, :restart}, state}
     {:noreply, [], state}
   end
 
-  def terminate(_reason, %State{} = state) do
-    commit(state)
-    Process.unlink(state.worker_name)
-    KafkaEx.stop_worker(state.worker_name)
-  end
+  # def terminate({:shutdown, :restart}, _state), do: :ok
+
+  # def terminate(_reason, %State{} = state) do
+  #   commit(state)
+  #   Process.unlink(state.worker_name)
+  #   KafkaEx.stop_worker(state.worker_name)
+  # end
 
   # Helpers
 
