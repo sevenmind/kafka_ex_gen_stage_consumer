@@ -356,11 +356,11 @@ defmodule KafkaExGenStageConsumer do
   end
 
   def handle_call(:partition, _from, state) do
-    {:reply, {state.topic, state.partition}, state}
+    {:reply, {state.topic, state.partition}, [], state}
   end
 
   def handle_call({:commit, strategy, offset}, _from, state) do
-    {:reply, :ok, handle_commit(strategy, %State{state | acked_offset: offset})}
+    {:reply, :ok, [], handle_commit(strategy, %State{state | acked_offset: offset})}
   end
 
   # handle_info maintains the loop attemting to meet demand until demand == 0
