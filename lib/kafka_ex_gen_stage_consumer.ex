@@ -292,6 +292,8 @@ defmodule KafkaExGenStageConsumer do
            fetch_options: fetch_options
          } = state
        ) do
+    Logger.debug("Handling demand #{demand} on #{topic}/#{partition}")
+
     [
       %FetchResponse{
         topic: ^topic,
@@ -327,7 +329,8 @@ defmodule KafkaExGenStageConsumer do
           [
             %State{
               state
-              | current_offset: last_offset + 1,
+              | acked_offset: last_offset + 1,
+                current_offset: last_offset + 1,
                 demand: demand - length(message_set)
             },
             state.commit_strategy
@@ -374,6 +377,7 @@ defmodule KafkaExGenStageConsumer do
   end
 
   def handle_info(message, state) do
+    Logger.debug("Unexpected handl_info #{inspect(message)}")
     {:noreply, [], state}
   end
 
@@ -409,6 +413,10 @@ defmodule KafkaExGenStageConsumer do
           KafkaEx.latest_offset(topic, partition, worker_name)
 
         _ ->
+          Logger.debug(
+            "Offset out of range while consuming topic #{topic}, partition #{partition}."
+          )
+
           raise "Offset out of range while consuming topic #{topic}, partition #{partition}."
       end
 
