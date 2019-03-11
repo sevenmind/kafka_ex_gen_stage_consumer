@@ -252,7 +252,7 @@ defmodule KafkaExGenStageConsumer do
     # be started with the PID of self
     {:ok, _pid} = subscribing_module.start_link({self, topic, partition, extra_consumer_args})
 
-    # Process.flag(:trap_exit, true)
+    Process.flag(:trap_exit, true)
 
     {:producer, state, producer_options}
   end
@@ -382,13 +382,11 @@ defmodule KafkaExGenStageConsumer do
     {:noreply, [], state}
   end
 
-  # def terminate({:shutdown, :restart}, _state), do: :ok
-
-  # def terminate(_reason, %State{} = state) do
-  #   commit(state)
-  #   Process.unlink(state.worker_name)
-  #   KafkaEx.stop_worker(state.worker_name)
-  # end
+  def terminate(_reason, %State{} = state) do
+    commit(state)
+    Process.unlink(state.worker_name)
+    KafkaEx.stop_worker(state.worker_name)
+  end
 
   # Helpers
 
