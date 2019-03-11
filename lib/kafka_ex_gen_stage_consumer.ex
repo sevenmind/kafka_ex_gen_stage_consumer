@@ -274,22 +274,24 @@ defmodule KafkaExGenStageConsumer do
 
   def handle_demand(demand, state)
       when demand > 0 do
-    do_handle_demand(demand, state)
+    Process.send_after(self(), :try_to_meet_demand, 5)
+
+    {:noreply, [], %State{state | demand: demand}}
   end
 
   def handle_demand(0, state) do
     {:noreply, [], state}
   end
 
-  @spec do_handle_demand(integer, KafkaExGenStageConsumer.State.t()) ::
+  @spec do_handle_demand(KafkaExGenStageConsumer.State.t()) ::
           {:noreply, [any()], KafkaExGenStageConsumer.State.t()}
   defp do_handle_demand(
-         demand,
          %State{
            topic: topic,
            partition: partition,
            current_offset: offset,
-           fetch_options: fetch_options
+           fetch_options: fetch_options,
+           demand: demand
          } = state
        ) do
     # Logger.debug("Handling demand #{demand} on #{topic}/#{partition}")
@@ -373,7 +375,7 @@ defmodule KafkaExGenStageConsumer do
 
   # handle_info maintains the loop attemting to meet demand until demand 0
   def handle_info(:try_to_meet_demand, %{demand: demand} = state) when demand > 0 do
-    do_handle_demand(demand, state)
+    do_handle_demand(state)
   end
 
   def handle_info(:try_to_meet_demand, state) do
