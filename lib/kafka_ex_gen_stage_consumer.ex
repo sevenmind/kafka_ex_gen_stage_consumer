@@ -371,14 +371,14 @@ defmodule KafkaExGenStageConsumer do
     {:noreply, [], state}
   end
 
-  # handle_info maintains the loop attemting to meet demand until demand == 0
+  # handle_info maintains the loop attemting to meet demand until demand 0
   def handle_info(:try_to_meet_demand, %{demand: demand} = state) when demand > 0 do
     do_handle_demand(demand, state)
   end
 
   def handle_info(:try_to_meet_demand, state) do
-    # Only way to reset Flow subscribers demand is to kill self?
-    # {:stop, {:shutdown, :restart}, state}
+    Logger.debug("consumer demand met")
+
     {:noreply, [], state}
   end
 
