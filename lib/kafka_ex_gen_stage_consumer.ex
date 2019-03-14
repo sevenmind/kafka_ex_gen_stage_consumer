@@ -339,9 +339,7 @@ defmodule KafkaExGenStageConsumer do
           ]
       end
 
-    if state.demand > 0 do
-      Process.send_after(self(), :try_to_meet_demand, 1)
-    end
+    Process.send_after(self(), :try_to_meet_demand, 10)
 
     # Todo allow more flexible commit_strategy
     {:noreply, message_set, handle_commit(commit_strategy, state)}
