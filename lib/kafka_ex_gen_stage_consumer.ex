@@ -377,8 +377,6 @@ defmodule KafkaExGenStageConsumer do
   end
 
   def handle_info(:try_to_meet_demand, state) do
-    Logger.debug("consumer demand met")
-
     {:noreply, [], state}
   end
 
@@ -414,7 +412,7 @@ defmodule KafkaExGenStageConsumer do
           KafkaEx.latest_offset(topic, partition, worker_name)
 
         _ ->
-          Logger.debug(
+          Logger.warn(
             "Offset out of range while consuming topic #{topic}, partition #{partition}."
           )
 
