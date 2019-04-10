@@ -60,7 +60,7 @@ supervision approaches are welcome.
       # ... other children
       supervisor(
         KafkaEx.ConsumerGroup,
-        [KafkaExGenStageConsumer, subscriber_impl, consumer_group_name, topic_names, consumer_group_opts]
+        [{KafkaExGenStageConsumer, subscriber_impl}, consumer_group_name, topic_names, consumer_group_opts]
       )
     ]
 
