@@ -50,7 +50,7 @@ defmodule KafkaExGenStageConsumer do
   ```
 
   The subscribing module is expected to implement a single function of
-  `start_link/1`, which receives a tuple of `{pid, topic, partition, extra_consumer_args}`.
+  `start_link/1`, which receives a tuple of `{producer_name, topic, partition, extra_consumer_args}`.
 
 
   ## Example Consumer stage
@@ -59,13 +59,13 @@ defmodule KafkaExGenStageConsumer do
   defmodule ExampleSubscriber do
     use GenStage
 
-    def start_link({pid, topic, partition, extra_consumer_args} = opts) do
-      {gen_server_options, _} = Keyword.split(extra_consumer_args, [:name, :debug]) # GenServer.Options.t()
+    def start_link({producer, topic, partition, extra_consumer_args} = opts) do
+      gen_server_options = Keyword.split([:name, :debug]) # GenServer.Options.t()
       GenStage.start_link(__MODULE__, opts, gen_server_options)
     end
 
-    def init({pid, topic, partition, extra_consumer_args} = opts) do
-      {:consumer, [], subscribe_to: [pid]}
+    def init({producer, topic, partition, extra_consumer_args} = opts) do
+      {:consumer, [], subscribe_to: [producer]}
     end
 
     def handle_events(events, state) do
@@ -81,12 +81,12 @@ defmodule KafkaExGenStageConsumer do
 
   ```elixir
   defmodule ExampleFlowConsumer do
-    def start_link({pid, topic, partition, extra_consumer_args} = opts) do
+    def start_link({producer, topic, partition, extra_consumer_args} = opts) do
 
-      Flow.from_stages([pid])
+      Flow.from_stages([producer])
       |> Flow.map(&decode_event/1)
       |> Flow.map(&do_work/1)
-      |> Flow.map(&KafkaExGenStageConsumer.trigger_commit(pid, {:async_commit, &1.offset}))
+      |> Flow.map(&KafkaExGenStageConsumer.trigger_commit(producer, {:async_commit, &1.offset}))
       |> Flow.start_link()
 
     end
@@ -171,10 +171,12 @@ defmodule KafkaExGenStageConsumer do
   def start_link(subscribing_module, group_name, topic, partition, opts \\ []) do
     {server_opts, consumer_opts} = Keyword.split(opts, [:debug, :name, :timeout, :spawn_opt])
 
+    name = String.to_atom("#{__MODULE__}_#{topic}_#{partition}")
+
     GenStage.start_link(
       __MODULE__,
-      {subscribing_module, group_name, topic, partition, consumer_opts},
-      server_opts
+      {subscribing_module, group_name, topic, partition, Keyword.merge(consumer_opts, name: name)},
+      Keyword.merge(server_opts, name: name)
     )
   end
 
@@ -250,7 +252,7 @@ defmodule KafkaExGenStageConsumer do
 
     # Not sure the best way to start a child of a worker module that needs to
     # be started with the PID of self
-    {:ok, _pid} = subscribing_module.start_link({self, topic, partition, extra_consumer_args})
+    {:ok, _pid} = subscribing_module.start_link({Keyword.get(opts, :name), topic, partition, extra_consumer_args})
 
     Process.flag(:trap_exit, true)
 

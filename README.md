@@ -60,7 +60,7 @@ supervision approaches are welcome.
       # ... other children
       supervisor(
         KafkaEx.ConsumerGroup,
-        [{KafkaExGenStageConsumer, subscriber_impl}, consumer_group_name, topic_names, consumer_group_opts]
+        [KafkaExGenStageConsumer, subscriber_impl, consumer_group_name, topic_names, consumer_group_opts]
       )
     ]
 
@@ -79,13 +79,13 @@ The subscribing module is expected to implement a single function of
 defmodule ExampleSubscriber do
   use GenStage
 
-  def start_link({pid, topic, partition, extra_consumer_args} = opts) do
-    {gen_server_options, _} = Keyword.split(extra_consumer_args, [:name, :debug]) # GenServer.Options.t()
+  def start_link({producer, topic, partition, extra_consumer_args} = opts) do
+    gen_server_options = Keyword.split([:name, :debug]) # GenServer.Options.t()
     GenStage.start_link(__MODULE__, opts, gen_server_options)
   end
 
-  def init({pid, topic, partition, extra_consumer_args} = opts) do
-    {:consumer, [], subscribe_to: [pid]}
+  def init({producer, topic, partition, extra_consumer_args} = opts) do
+    {:consumer, [], subscribe_to: [producer]}
   end
 
   def handle_events(events, state) do
@@ -101,9 +101,9 @@ end
 
 ```elixir
 defmodule ExampleFlowConsumer do
-  def start_link({pid, topic, partition, extra_consumer_args} = opts) do
+  def start_link({producer, topic, partition, extra_consumer_args} = opts) do
 
-    Flow.from_stages([pid])
+    Flow.from_stages([producer])
     |> Flow.map(&decode_event/1)
     |> Flow.map(&do_work/1)
     |> Flow.map(&KafkaExGenStageConsumer.trigger_commit(pid, {:async_commit, &1.offset}))
