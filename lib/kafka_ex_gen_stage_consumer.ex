@@ -60,7 +60,7 @@ defmodule KafkaExGenStageConsumer do
     use GenStage
 
     def start_link({producer, topic, partition, extra_consumer_args} = opts) do
-      gen_server_options = Keyword.split([:name, :debug]) # GenServer.Options.t()
+      gen_server_options = Keyword.take(extra_consumer_args, [:name, :debug]) # GenServer.Options.t()
       GenStage.start_link(__MODULE__, opts, gen_server_options)
     end
 
