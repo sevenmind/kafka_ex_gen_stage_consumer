@@ -118,6 +118,7 @@ defmodule KafkaExGenStageConsumer do
   alias KafkaEx.Protocol.OffsetCommit.Response, as: OffsetCommitResponse
   alias KafkaEx.Protocol.OffsetFetch.Request, as: OffsetFetchRequest
   alias KafkaEx.Protocol.OffsetFetch.Response, as: OffsetFetchResponse
+  alias KafkaExGenStageConsumer.State
 
   @typedoc """
   Option values used when starting a `KafkaEx.GenConsumer`.
@@ -149,7 +150,8 @@ defmodule KafkaExGenStageConsumer do
       :auto_offset_reset,
       :fetch_options,
       :commit_strategy,
-      :demand
+      :demand,
+      :start_consumer
     ]
   end
 
@@ -171,15 +173,23 @@ defmodule KafkaExGenStageConsumer do
   def start_link(subscribing_module, group_name, topic, partition, opts \\ []) do
     {server_opts, consumer_opts} = Keyword.split(opts, [:debug, :name, :timeout, :spawn_opt])
 
-    name = String.to_atom("#{__MODULE__}_#{topic}_#{partition}")
+    name = stage_name(topic, partition)
 
     GenStage.start_link(
       __MODULE__,
-      {subscribing_module, group_name, topic, partition, Keyword.merge(consumer_opts, name: name)},
+      {subscribing_module, group_name, topic, partition,
+       Keyword.merge(consumer_opts, name: name)},
       Keyword.merge(server_opts, name: name)
     )
   end
 
+  @spec stage_name(binary, non_neg_integer) :: atom
+  def stage_name(topic, partition) do
+    String.to_atom("#{__MODULE__}_#{topic}_#{partition}")
+  end
+
+  @spec init({atom(), :no_consumer_group | binary(), binary(), non_neg_integer(), keyword()}) ::
+          {:producer, State.t(), [GenStage.producer_option()]}
   def init({subscribing_module, group_name, topic, partition, opts}) do
     producer_options =
       Keyword.get(
@@ -222,6 +232,12 @@ defmodule KafkaExGenStageConsumer do
         :extra_consumer_args
       )
 
+    stage_name =
+      Keyword.get(
+        opts,
+        :name
+      )
+
     worker_opts = Keyword.take(opts, [:uris])
 
     {:ok, worker_name} =
@@ -250,17 +266,27 @@ defmodule KafkaExGenStageConsumer do
       commit_strategy: commit_strategy
     }
 
-    # Not sure the best way to start a child of a worker module that needs to
-    # be started with the PID of self
-    {:ok, _pid} = subscribing_module.start_link({Keyword.get(opts, :name), topic, partition, extra_consumer_args})
+    # Some cases we want to be able to run the GenStage consumer seperately.
+    if Keyword.get(
+         opts,
+         :start_consumer,
+         true
+       ) do
+      # Not sure the best way to start a child of a worker module that needs to
+      # be started with the PID of self
+      {:ok, _pid} =
+        subscribing_module.start_link(
+          {stage_name, topic, partition, extra_consumer_args}
+        )
+    end
 
     Process.flag(:trap_exit, true)
 
     {:producer, state, producer_options}
   end
 
-  @spec handle_demand(integer, KafkaExGenStageConsumer.State.t()) ::
-          {:noreply, [MEssage.t()], KafkaExGenStageConsumer.State.t()}
+  @spec handle_demand(integer, State.t()) ::
+          {:noreply, [Message.t()], State.t()}
   def handle_demand(
         demand,
         %State{current_offset: nil, last_commit: nil} = state
@@ -285,8 +311,8 @@ defmodule KafkaExGenStageConsumer do
     {:noreply, [], state}
   end
 
-  @spec do_handle_demand(KafkaExGenStageConsumer.State.t()) ::
-          {:noreply, [any()], KafkaExGenStageConsumer.State.t()}
+  @spec do_handle_demand(State.t()) ::
+          {:noreply, [Message.t()], State.t()}
   defp do_handle_demand(
          %State{
            topic: topic,
