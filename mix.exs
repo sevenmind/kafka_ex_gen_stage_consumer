@@ -35,7 +35,7 @@ defmodule KafkaExGenStageConsumer.MixProject do
   defp deps do
     [
       {:gen_stage, "~> 0.14"},
-      {:kafka_ex, git: "https://github.com/gerbal/kafka_ex", branch: "custom-genconsumer"},
+      {:kafka_ex, git: "https://github.com/kafkaex/kafka_ex"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false}
