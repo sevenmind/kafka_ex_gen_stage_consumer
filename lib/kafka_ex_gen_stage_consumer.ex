@@ -408,6 +408,10 @@ defmodule KafkaExGenStageConsumer do
     {:noreply, [], state}
   end
 
+  def handle_info({:EXIT, _pid, :shutdown}, state) do
+    {:stop, :shutdown, state}
+  end
+
   def terminate(_reason, %State{} = state) do
     commit(state)
     Process.unlink(state.worker_name)
