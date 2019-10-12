@@ -173,7 +173,7 @@ defmodule KafkaExGenStageConsumer do
   def start_link(subscribing_module, group_name, topic, partition, opts \\ []) do
     {server_opts, consumer_opts} = Keyword.split(opts, [:debug, :name, :timeout, :spawn_opt])
 
-    name = stage_name(topic, partition)
+    name = stage_name(topic, partition, group_name)
 
     GenStage.start_link(
       __MODULE__,
@@ -183,9 +183,9 @@ defmodule KafkaExGenStageConsumer do
     )
   end
 
-  @spec stage_name(binary, non_neg_integer) :: atom
-  def stage_name(topic, partition) do
-    String.to_atom("#{__MODULE__}_#{topic}_#{partition}")
+  @spec stage_name(binary, non_neg_integer, binary) :: atom
+  def stage_name(topic, partition, group_name) do
+    Module.concat([__MODULE__, topic, to_string(partition), group_name])
   end
 
   @spec init({atom(), :no_consumer_group | binary(), binary(), non_neg_integer(), keyword()}) ::
@@ -275,9 +275,7 @@ defmodule KafkaExGenStageConsumer do
       # Not sure the best way to start a child of a worker module that needs to
       # be started with the PID of self
       {:ok, _pid} =
-        subscribing_module.start_link(
-          {stage_name, topic, partition, extra_consumer_args}
-        )
+        subscribing_module.start_link({stage_name, topic, partition, extra_consumer_args})
     end
 
     Process.flag(:trap_exit, true)
@@ -342,6 +340,11 @@ defmodule KafkaExGenStageConsumer do
       case error_code do
         :offset_out_of_range ->
           handle_offset_out_of_range(state)
+
+        :not_leader_for_partition ->
+          # ??? re-fetch metadata
+          # Kill consumption
+          nil
 
         :no_error ->
           state
