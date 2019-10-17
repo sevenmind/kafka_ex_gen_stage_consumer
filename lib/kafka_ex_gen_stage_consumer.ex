@@ -295,6 +295,8 @@ defmodule KafkaExGenStageConsumer do
         demand: demand
     }
 
+    Process.send_after(self(), :try_to_meet_demand, 10)
+
     {:noreply, [], new_state}
   end
 
