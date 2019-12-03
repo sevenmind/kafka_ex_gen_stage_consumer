@@ -560,21 +560,8 @@ defmodule KafkaExGenStageConsumer do
         }
 
       :unknown_topic_or_partition ->
-        [
-          %OffsetResponse{
-            topic: ^topic,
-            partition_offsets: [
-              %{partition: ^partition, error_code: :no_error, offset: [offset]}
-            ]
-          }
-        ] = KafkaEx.earliest_offset(topic, partition, worker_name)
+        handle_offset_out_of_range(state)
 
-        %State{
-          state
-          | current_offset: offset,
-            committed_offset: offset,
-            acked_offset: offset
-        }
     end
   end
 end
