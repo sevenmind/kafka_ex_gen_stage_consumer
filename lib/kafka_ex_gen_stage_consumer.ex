@@ -513,8 +513,12 @@ defmodule KafkaExGenStageConsumer do
       offset: offset
     }
 
-    [%OffsetCommitResponse{topic: ^topic, partitions: [^partition]}] =
-      KafkaEx.offset_commit(worker_name, request)
+    [
+      %OffsetCommitResponse{
+        topic: ^topic,
+        partitions: [%{error_code: :no_error, partition: ^partition}]
+      }
+    ] = KafkaEx.offset_commit(worker_name, request)
 
     Logger.debug(fn ->
       "Committed offset #{topic}/#{partition}@#{offset} for #{group}"
@@ -561,7 +565,6 @@ defmodule KafkaExGenStageConsumer do
 
       :unknown_topic_or_partition ->
         handle_offset_out_of_range(state)
-
     end
   end
 end
