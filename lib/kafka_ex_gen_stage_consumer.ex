@@ -516,7 +516,7 @@ defmodule KafkaExGenStageConsumer do
     [
       %OffsetCommitResponse{
         topic: ^topic,
-        partitions: [%{error_code: :no_error, partition: ^partition}]
+        # partitions: [%{error_code: :no_error, partition: ^partition}]
       }
     ] = KafkaEx.offset_commit(worker_name, request)
 
