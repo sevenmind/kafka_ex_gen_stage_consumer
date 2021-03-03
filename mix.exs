@@ -4,8 +4,8 @@ defmodule KafkaExGenStageConsumer.MixProject do
   def project do
     [
       app: :kafka_ex_gen_stage_consumer,
-      version: "0.1.0",
-      elixir: "~> 1.4",
+      version: "0.1.1",
+      elixir: "~> 1.10",
       dialyzer: [
         plt_add_deps: :transitive,
         flags: [
@@ -35,7 +35,7 @@ defmodule KafkaExGenStageConsumer.MixProject do
   defp deps do
     [
       {:gen_stage, "~> 1.0"},
-      {:kafka_ex, git: "https://github.com/kafkaex/kafka_ex"},
+      {:kafka_ex, "~> 0.12.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
