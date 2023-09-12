@@ -4,7 +4,7 @@ defmodule KafkaExGenStageConsumer.MixProject do
   def project do
     [
       app: :kafka_ex_gen_stage_consumer,
-      version: "0.1.1",
+      version: "0.1.2",
       elixir: "~> 1.10",
       dialyzer: [
         plt_add_deps: :transitive,
