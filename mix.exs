@@ -35,7 +35,7 @@ defmodule KafkaExGenStageConsumer.MixProject do
   defp deps do
     [
       {:gen_stage, "~> 1.0"},
-      {:kafka_ex, "~> 0.12.0"},
+      {:kafka_ex, "~> 0.12"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
