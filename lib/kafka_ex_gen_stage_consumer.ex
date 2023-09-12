@@ -344,9 +344,8 @@ defmodule KafkaExGenStageConsumer do
           handle_offset_out_of_range(state)
 
         :not_leader_for_partition ->
-          # ??? re-fetch metadata
-          # Kill consumption
-          nil
+          Process.send(state.worker_name, :update_consumer_metadata, [])
+          state
 
         :no_error ->
           state
@@ -515,7 +514,7 @@ defmodule KafkaExGenStageConsumer do
 
     [
       %OffsetCommitResponse{
-        topic: ^topic,
+        topic: ^topic
         # partitions: [%{error_code: :no_error, partition: ^partition}]
       }
     ] = KafkaEx.offset_commit(worker_name, request)
